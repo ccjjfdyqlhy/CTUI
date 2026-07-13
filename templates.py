@@ -9,7 +9,7 @@ body{margin:0;padding:0;background:#000;color:#fff;height:100vh;display:flex;jus
 .panel{display:none}.panel.active{display:block}
 .component-container{position:relative;display:inline-flex;flex-direction:column;gap:10px;align-items:flex-start;width:100%}
 .component-row{display:flex;flex-direction:row;align-items:center;gap:15px;width:100%;flex-wrap:wrap}
-.cursor-highlight{position:absolute;background:rgba(255,255,255,.35);pointer-events:none;transition:top .15s cubic-bezier(.4,0,.2,1),left .15s cubic-bezier(.4,0,.2,1),height .15s cubic-bezier(.4,0,.2,1),width .15s cubic-bezier(.4,0,.2,1);z-index:10}
+.cursor-highlight{position:absolute;background:rgba(255,255,255,.35);pointer-events:none;transition:top .15s cubic-bezier(.4,0,.2,1),left .15s cubic-bezier(.4,0,.2,1),height .15s cubic-bezier(.4,0,.2,1),width .15s cubic-bezier(.4,0,.2,1),opacity .3s ease;z-index:10}
 .cursor-highlight.activated{background:#fff!important}
 .cursor-highlight.editing-special{background:rgba(255,255,255,.7)}
 .terminal-component{background:transparent;border:none;color:#fff;position:relative;width:auto;min-width:0;padding:10px;font-size:var(--terminal-font-size);transition:all .3s ease;pointer-events:none;white-space:nowrap;font-family:var(--terminal-font-family)}
@@ -128,9 +128,7 @@ input.terminal-component:focus{background:rgba(255,255,255,.5)}
 #terminal-cursor.fading{opacity:0;transition:opacity 3s linear}
 #terminal-cursor.snapped{background:rgba(255,255,255,.35)}
 #terminal-cursor.clicked{background:#fff!important;transition:width .08s,height .08s,top .08s,left .08s,background 0s}
-.keyboard-cursor{opacity:1;transition:opacity .3s ease}
-.keyboard-cursor.mouse-active{opacity:0;transition:opacity .3s ease}
-.keyboard-cursor.fade-in{opacity:1;transition:opacity 3s ease}
+.keyboard-cursor{opacity:1}
 *{cursor:none!important}
 :hover{cursor:none!important}
 .terminal-component.hover{background:rgba(255,255,255,.3)}
@@ -147,6 +145,7 @@ input.terminal-component:focus{background:rgba(255,255,255,.5)}
 .choice-btn:nth-child(5){animation-delay:.4s}
 .choice-btn:hover{background:rgba(255,255,255,.9);color:#000;transform:translateX(8px)}
 .choice-btn:active{background:#fff;color:#000}
+.choice-btn.active-choice{background:rgba(255,255,255,.9);color:#000;transform:translateX(8px)}
 @keyframes choice-in{0%{opacity:0;transform:translateY(10px)}100%{opacity:1;transform:translateY(0)}}
 
 .terminal-component[data-type="audio-toggle"]{pointer-events:all;font-size:calc(var(--terminal-font-size)*1.1)}
@@ -164,8 +163,7 @@ input.terminal-component:focus{background:rgba(255,255,255,.5)}
 .story-line{margin-bottom:12px;opacity:0;animation:story-line-in .3s ease forwards;pointer-events:none}
 .story-line .speaker{display:block;font-size:calc(var(--terminal-font-size)*.7);opacity:.5;letter-spacing:2px;margin-bottom:2px}
 .story-line .text{font-size:calc(var(--terminal-font-size)*.9);line-height:1.5;opacity:.9;white-space:pre-wrap}
-.story-line .text .char{opacity:0;animation:char-in .05s ease forwards}
-@keyframes char-in{0%{opacity:0}100%{opacity:1}}
+.story-line .text .char{opacity:0}
 @keyframes story-line-in{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:translateY(0)}}
 .story-continue{text-align:center;font-size:calc(var(--terminal-font-size)*.7);opacity:0;letter-spacing:3px;padding:8px;transition:opacity .4s ease;pointer-events:none}
 .story-continue.show{opacity:.6}
@@ -200,6 +198,9 @@ class CARNIVALTerminal {
         this.activeKeypadComponent = null;
         this.activeKeypadRow = 0;
         this.activeKeypadCol = 0;
+        this.isEditingChoices = false;
+        this.activeChoiceComponent = null;
+        this.activeChoiceIndex = 0;
         this.countdownInterval = null;
         this.typewriterInputBuffer = '';
         this.currentFontSize = 16;
@@ -250,7 +251,7 @@ class CARNIVALTerminal {
         this.stopDigitEdit();
         this.stopSliderEdit();
         this.stopKeypadEdit();
-        if (this.cursor) { this.cursor.classList.remove('activated'); this.cursor.classList.remove('mouse-active'); }
+        if (this.cursor) { this.cursor.classList.remove('activated'); this.cursor.style.transition = 'none'; this.cursor.style.opacity = '1'; }
         this.cursor = this.activePanel.querySelector('.cursor-highlight');
         if (!this.cursor) {
             this.cursor = document.createElement('div');
@@ -335,7 +336,7 @@ class CARNIVALTerminal {
         this.mouseCursor.classList.add('snapped');
         this.mouseCursor.classList.remove('fading');
         this.mouseCursor.style.opacity = '1';
-        if (this.cursor) { this.cursor.classList.remove('fade-in'); this.cursor.classList.add('mouse-active'); }
+        if (this.cursor) { this.cursor.style.opacity = '0'; }
         const r = comp.getBoundingClientRect();
         this.mouseCursor.style.top = r.top + 'px';
         this.mouseCursor.style.left = r.left + 'px';
@@ -358,7 +359,7 @@ class CARNIVALTerminal {
             this.mouseCursor.classList.remove('fading');
             this.mouseCursor.style.opacity = '1';
             this.mouseCursor.style.display = 'block';
-            if (this.cursor) this.cursor.classList.remove('fade-in');
+            if (this.cursor) { this.cursor.style.opacity = '1'; this.cursor.style.transition = ''; }
         }
         const all = this.activePanel?.querySelectorAll(
             'button.terminal-component, input.terminal-component, ' +
@@ -380,7 +381,7 @@ class CARNIVALTerminal {
             if (dist < minDist) { minDist = dist; nearest = el; }
         });
         if (nearest && nearest.offsetParent) {
-            if (this.cursor) { this.cursor.classList.remove('fade-in'); this.cursor.classList.add('mouse-active'); }
+            if (this.cursor) { this.cursor.style.opacity = '0'; this.cursor.style.transition = ''; }
             this.snapToComponent(nearest);
             this.grid.forEach(r => r.forEach(c => c.classList.remove('active')));
             nearest.classList.add('active');
@@ -392,7 +393,7 @@ class CARNIVALTerminal {
             this.mouseCursor.style.height = '24px';
             this.mouseCursor.style.top = (e.clientY - 12) + 'px';
             this.mouseCursor.style.left = (e.clientX - 10) + 'px';
-            if (this.cursor) { this.cursor.classList.remove('fade-in'); this.cursor.classList.add('mouse-active'); }
+            if (this.cursor) { this.cursor.style.opacity = '0'; this.cursor.style.transition = ''; }
             this.grid.forEach(r => r.forEach(c => c.classList.remove('active', 'hover')));
         }
         this.mouseIdleTimer = setTimeout(() => {
@@ -400,7 +401,7 @@ class CARNIVALTerminal {
             this.mouseCursor.classList.add('fading');
             this.mouseFadeTimer = setTimeout(() => {
                 this.mouseCursor.style.display = 'none';
-                if (this.cursor) { this.cursor.classList.remove('mouse-active'); this.cursor.classList.add('fade-in'); }
+                if (this.cursor) { this.cursor.style.transition = 'opacity 3s ease, top .15s cubic-bezier(.4,0,.2,1), left .15s cubic-bezier(.4,0,.2,1), height .15s cubic-bezier(.4,0,.2,1), width .15s cubic-bezier(.4,0,.2,1)'; this.cursor.style.opacity = '1'; }
                 this.updateHighlight();
             }, this.fadeDuration);
         }, this.mouseIdleDelay);
@@ -411,7 +412,7 @@ class CARNIVALTerminal {
         if (!comp) return;
         this.isMouseDown = true;
         this.mouseCursor.classList.add('clicked');
-        if (this.cursor) { this.cursor.classList.remove('fade-in'); this.cursor.classList.add('mouse-active'); }
+        if (this.cursor) { this.cursor.style.opacity = '0'; this.cursor.style.transition = ''; }
         for (let ri = 0; ri < this.grid.length; ri++) {
             for (let ci = 0; ci < this.grid[ri].length; ci++) {
                 if (this.grid[ri][ci] === comp) {
@@ -432,7 +433,7 @@ class CARNIVALTerminal {
             this.cancelLongPress();
         }
         else if (type === 'dragbar') { this.startDragbarEdit(e, comp); }
-        else if (type === 'choice-group') { /* choice buttons handle themselves */ }
+        else if (type === 'choice-group') { this.startChoiceEdit(comp); }
         else if (type === 'audio-toggle') { this.toggleAudio(comp); }
         else { this.activateComponent(comp); }
     }
@@ -449,14 +450,17 @@ class CARNIVALTerminal {
         const choice = e.target.closest('.choice-btn');
         if (choice) {
             const group = choice.closest('[data-type="choice-group"]');
-            if (group && group.dataset.callbackId) {
-                const idx = choice.dataset.choiceIndex;
-                fetch(this.callbackBase + '/callback/' + group.dataset.callbackId, {
-                    method: 'POST', headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({value: idx})
-                }).then(r => r.json()).then(result => {
-                    if (result.action) this.handleCallbackResult(result);
-                }).catch(() => {});
+            if (group) {
+                if (this.isEditingChoices) this.stopChoiceEdit();
+                if (group.dataset.callbackId) {
+                    const idx = choice.dataset.choiceIndex;
+                    fetch(this.callbackBase + '/callback/' + group.dataset.callbackId, {
+                        method: 'POST', headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({value: idx})
+                    }).then(r => r.json()).then(result => {
+                        if (result.action) this.handleCallbackResult(result);
+                    }).catch(() => {});
+                }
             }
             return;
         }
@@ -523,6 +527,7 @@ class CARNIVALTerminal {
         if (this.isEditingDigits) { this.handleDigitEdit(e); return; }
         if (this.isEditingSlider) { this.handleSliderEdit(e); return; }
         if (this.isEditingKeypad) { this.handleKeypadEdit(e); return; }
+        if (this.isEditingChoices) { this.handleChoiceEdit(e); return; }
         if (this.grid.length === 0) return;
 
         const activeEl = document.activeElement;
@@ -595,6 +600,7 @@ class CARNIVALTerminal {
         if (type === 'digit-string') { this.startDigitEdit(comp); return; }
         if (type === 'slider') { this.startSliderEdit(comp); return; }
         if (type === 'keypad') { this.startKeypadEdit(comp); return; }
+        if (type === 'choice-group') { this.startChoiceEdit(comp); return; }
         if (type === 'long-press') { if (!e.repeat && !this.isCharging) this.startLongPress(comp); return; }
         if (type === 'dragbar') { this.startDragbarEdit(e, comp); return; }
         this.activateComponent(comp);
@@ -1166,6 +1172,76 @@ class CARNIVALTerminal {
                 this.cursor.style.left = (kp.offsetLeft + relLeft) + 'px';
                 this.cursor.style.width = keyEl.offsetWidth + 'px';
                 this.cursor.style.height = keyEl.offsetHeight + 'px';
+            }, 20);
+        }
+    }
+
+    startChoiceEdit(comp) {
+        this.isEditingChoices = true;
+        this.activeChoiceComponent = comp;
+        this.activeChoiceIndex = 0;
+        this.cursor?.classList.add('editing-special');
+        this.highlightChoiceButton();
+    }
+
+    stopChoiceEdit() {
+        if (!this.isEditingChoices) return;
+        this.isEditingChoices = false;
+        if (this.activeChoiceComponent) {
+            this.activeChoiceComponent.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('active-choice'));
+        }
+        this.activeChoiceComponent = null;
+        this.activeChoiceIndex = 0;
+        this.cursor?.classList.remove('editing-special');
+    }
+
+    handleChoiceEdit(e) {
+        e.preventDefault();
+        const comp = this.activeChoiceComponent;
+        if (!comp) return;
+        const btns = comp.querySelectorAll('.choice-btn');
+        if (!btns || btns.length === 0) { this.stopChoiceEdit(); return; }
+        switch (e.key) {
+            case 'ArrowUp':
+                if (this.activeChoiceIndex > 0) this.activeChoiceIndex--;
+                break;
+            case 'ArrowDown':
+                if (this.activeChoiceIndex < btns.length - 1) this.activeChoiceIndex++;
+                break;
+            case 'Enter':
+                const data = {value: String(this.activeChoiceIndex)};
+                if (comp.dataset.callbackId) {
+                    fetch(this.callbackBase + '/callback/' + comp.dataset.callbackId, {
+                        method: 'POST', headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(data)
+                    }).then(r => r.json()).then(result => {
+                        if (result.action) this.handleCallbackResult(result);
+                    }).catch(() => {});
+                }
+                this.stopChoiceEdit();
+                this.updateHighlight();
+                return;
+            case 'Escape':
+                this.stopChoiceEdit();
+                return;
+        }
+        this.highlightChoiceButton();
+    }
+
+    highlightChoiceButton() {
+        if (!this.activeChoiceComponent) return;
+        this.activeChoiceComponent.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('active-choice'));
+        const btns = this.activeChoiceComponent.querySelectorAll('.choice-btn');
+        const btn = btns[this.activeChoiceIndex];
+        if (!btn) return;
+        btn.classList.add('active-choice');
+        if (this.cursor) {
+            setTimeout(() => {
+                if (!btn.offsetParent) return;
+                this.cursor.style.top = btn.offsetTop + 'px';
+                this.cursor.style.left = btn.offsetLeft + 'px';
+                this.cursor.style.width = btn.offsetWidth + 'px';
+                this.cursor.style.height = btn.offsetHeight + 'px';
             }, 20);
         }
     }
