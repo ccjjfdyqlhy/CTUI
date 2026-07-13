@@ -133,7 +133,7 @@ input.terminal-component:focus{background:rgba(255,255,255,.5)}
 :hover{cursor:none!important}
 .terminal-component.hover{background:rgba(255,255,255,.3)}
 
-.terminal-component[data-type="log-gen"]{width:100%;max-height:300px;overflow-y:hidden;background:rgba(255,255,255,.03);padding:8px;font-size:calc(var(--terminal-font-size)*.8);line-height:1.3;font-family:'Courier New',monospace;pointer-events:none;position:relative}
+.terminal-component[data-type="log-gen"]{width:100%;height:200px;overflow-y:auto;background:rgba(255,255,255,.03);padding:8px;font-size:calc(var(--terminal-font-size)*.8);line-height:1.3;font-family:'Courier New',monospace;pointer-events:none;position:relative}
 .log-gen-line{white-space:pre-wrap;word-break:break-all;opacity:.85}
 
 .terminal-component[data-type="choice-group"]{display:flex;flex-direction:column;gap:8px;padding:8px;width:100%;pointer-events:all}
@@ -300,7 +300,7 @@ class CARNIVALTerminal {
                 '.digit-string-component, [data-type="switch"], [data-type="toggle"], ' +
                 '[data-type="slider"], [data-type="checkbox"], [data-type="dropdown"], ' +
                 '[data-type="keypad"], [data-type="long-press"], [data-type="digit-string"], ' +
-                '[data-type="dragbar"], [data-type="choice-group"], [data-type="audio-toggle"]'
+                '[data-type="dragbar"], [data-type="choice-group"], [data-type="audio-toggle"], [data-type="story-text"]'
             ));
             if (components.length > 0) this.grid.push(components);
         });
@@ -341,13 +341,21 @@ class CARNIVALTerminal {
         this.mouseCursor.classList.add('snapped');
         this.mouseCursor.classList.remove('fading');
         this.mouseCursor.style.removeProperty('opacity');
-        if (this.cursor) { this.cursor.style.transition = ''; this.cursor.style.opacity = '0'; }
+        if (this.cursor) { this.cursor.style.transition = 'none'; this.cursor.style.opacity = '0'; }
         const r = comp.getBoundingClientRect();
         this.mouseCursor.style.top = r.top + 'px';
         this.mouseCursor.style.left = r.left + 'px';
         this.mouseCursor.style.width = r.width + 'px';
         this.mouseCursor.style.height = r.height + 'px';
         this.mouseCursor.style.display = 'block';
+        const container = this.activePanel?.querySelector('.component-container');
+        if (container && this.cursor) {
+            const cr = container.getBoundingClientRect();
+            this.cursor.style.top = (r.top - cr.top) + 'px';
+            this.cursor.style.left = (r.left - cr.left) + 'px';
+            this.cursor.style.width = r.width + 'px';
+            this.cursor.style.height = r.height + 'px';
+        }
         this.grid.forEach(r => r.forEach(c => c.classList.remove('hover')));
         comp.classList.add('hover');
     }
@@ -371,7 +379,7 @@ class CARNIVALTerminal {
             '.digit-string-component, [data-type="switch"], [data-type="toggle"], ' +
             '[data-type="slider"], [data-type="checkbox"], [data-type="dropdown"], ' +
             '[data-type="keypad"], [data-type="long-press"], [data-type="digit-string"], ' +
-            '[data-type="dragbar"], [data-type="choice-group"], [data-type="audio-toggle"]'
+            '[data-type="dragbar"], [data-type="choice-group"], [data-type="audio-toggle"], [data-type="story-text"]'
         );
         if (!all || all.length === 0) {
             this.mouseCursor.style.display = 'none';
@@ -446,6 +454,10 @@ class CARNIVALTerminal {
         else if (type === 'dragbar') { this.startDragbarEdit(e, comp); }
         else if (type === 'choice-group') { this.startChoiceEdit(comp); }
         else if (type === 'audio-toggle') { this.toggleAudio(comp); }
+        else if (type === 'story-text') {
+            const sc = comp.querySelector('.story-scroll');
+            if (sc) sc.click();
+        }
         else { this.activateComponent(comp); }
     }
 
@@ -502,6 +514,7 @@ class CARNIVALTerminal {
         this.activePanel = newPanel;
         this.activePanelId = panelId;
         this.initializeActivePanel();
+        this.mouseCursor.style.display = 'none';
     }
 
     updateHighlight() {
@@ -512,8 +525,16 @@ class CARNIVALTerminal {
         comp.classList.add('active');
         const pos = () => {
             if (!comp.offsetParent) { requestAnimationFrame(pos); return; }
-            this.cursor.style.top = comp.offsetTop + 'px';
-            this.cursor.style.left = comp.offsetLeft + 'px';
+            const container = this.activePanel?.querySelector('.component-container');
+            if (container) {
+                const cr = container.getBoundingClientRect();
+                const r = comp.getBoundingClientRect();
+                this.cursor.style.top = (r.top - cr.top) + 'px';
+                this.cursor.style.left = (r.left - cr.left) + 'px';
+            } else {
+                this.cursor.style.top = comp.offsetTop + 'px';
+                this.cursor.style.left = comp.offsetLeft + 'px';
+            }
             this.cursor.style.width = comp.offsetWidth + 'px';
             this.cursor.style.height = comp.offsetHeight + 'px';
             const sp = comp.closest('[data-type="scroll-panel"]');
@@ -631,6 +652,15 @@ class CARNIVALTerminal {
         if (type === 'dropdown') { this.cycleDropdown(comp); return; }
         if (type === 'choice-group') { return; }
         if (type === 'audio-toggle') { this.toggleAudio(comp); return; }
+        if (type === 'story-text') {
+            const sc = comp.querySelector('.story-scroll');
+            if (sc) {
+                sc.dispatchEvent(new PointerEvent('pointerdown', {bubbles: true}));
+                sc.dispatchEvent(new PointerEvent('pointerup', {bubbles: true}));
+                sc.click();
+            }
+            return;
+        }
         const action = comp.dataset.action;
         const target = comp.dataset.target;
         if (action === 'switch-panel' && target) { this.switchPanel(target); return; }
@@ -657,8 +687,6 @@ class CARNIVALTerminal {
         const maxLines = parseInt(comp.dataset.maxLines) || 50;
         let idx = 0;
         comp.innerHTML = '';
-        comp.style.maxHeight = '300px';
-        comp.style.overflowY = 'auto';
         const append = () => {
             if (idx >= lines.length) idx = 0;
             const line = document.createElement('div');
@@ -1119,13 +1147,18 @@ class CARNIVALTerminal {
         if (keys?.[this.activeKeypadCol]) keys[this.activeKeypadCol].classList.add('active-key');
         const keyEl = keys?.[this.activeKeypadCol];
         if (keyEl && this.cursor) {
-            const kp = this.activeKeypadComponent;
-            const relTop = keyEl.offsetTop;
-            const relLeft = keyEl.offsetLeft;
             setTimeout(() => {
-                if (!kp.offsetParent) return;
-                this.cursor.style.top = (kp.offsetTop + relTop) + 'px';
-                this.cursor.style.left = (kp.offsetLeft + relLeft) + 'px';
+                if (!keyEl.offsetParent) return;
+                const container = this.activePanel?.querySelector('.component-container');
+                if (container) {
+                    const cr = container.getBoundingClientRect();
+                    const kr = keyEl.getBoundingClientRect();
+                    this.cursor.style.top = (kr.top - cr.top) + 'px';
+                    this.cursor.style.left = (kr.left - cr.left) + 'px';
+                } else {
+                    this.cursor.style.top = keyEl.offsetTop + 'px';
+                    this.cursor.style.left = keyEl.offsetLeft + 'px';
+                }
                 this.cursor.style.width = keyEl.offsetWidth + 'px';
                 this.cursor.style.height = keyEl.offsetHeight + 'px';
             }, 20);
@@ -1169,27 +1202,6 @@ class CARNIVALTerminal {
                 return;
         }
         this.highlightKeypadKey();
-    }
-
-    highlightKeypadKey() {
-        if (!this.activeKeypadComponent) return;
-        this.activeKeypadComponent.querySelectorAll('.keypad-key').forEach(k => k.classList.remove('active-key'));
-        const rows = this.activeKeypadComponent.querySelectorAll('.keypad-row');
-        const keys = rows[this.activeKeypadRow]?.querySelectorAll('.keypad-key');
-        if (keys?.[this.activeKeypadCol]) keys[this.activeKeypadCol].classList.add('active-key');
-        const keyEl = keys?.[this.activeKeypadCol];
-        if (keyEl && this.cursor) {
-            const kp = this.activeKeypadComponent;
-            const relTop = keyEl.offsetTop;
-            const relLeft = keyEl.offsetLeft;
-            setTimeout(() => {
-                if (!kp.offsetParent) return;
-                this.cursor.style.top = (kp.offsetTop + relTop) + 'px';
-                this.cursor.style.left = (kp.offsetLeft + relLeft) + 'px';
-                this.cursor.style.width = keyEl.offsetWidth + 'px';
-                this.cursor.style.height = keyEl.offsetHeight + 'px';
-            }, 20);
-        }
     }
 
     startChoiceEdit(comp) {
@@ -1254,8 +1266,16 @@ class CARNIVALTerminal {
         if (this.cursor) {
             setTimeout(() => {
                 if (!btn.offsetParent) return;
-                this.cursor.style.top = btn.offsetTop + 'px';
-                this.cursor.style.left = btn.offsetLeft + 'px';
+                const container = this.activePanel?.querySelector('.component-container');
+                if (container) {
+                    const cr = container.getBoundingClientRect();
+                    const br = btn.getBoundingClientRect();
+                    this.cursor.style.top = (br.top - cr.top) + 'px';
+                    this.cursor.style.left = (br.left - cr.left) + 'px';
+                } else {
+                    this.cursor.style.top = btn.offsetTop + 'px';
+                    this.cursor.style.left = btn.offsetLeft + 'px';
+                }
                 this.cursor.style.width = btn.offsetWidth + 'px';
                 this.cursor.style.height = btn.offsetHeight + 'px';
             }, 20);

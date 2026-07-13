@@ -1,28 +1,23 @@
 """Demo: showcases every component of the CARNIVAL Terminal library."""
-from CTUI import TerminalApp, Button
+from CTUI import TerminalApp
 
 app = TerminalApp(title="CARNIVAL Terminal — Demo")
 
 # ── main ────────────────────────────────────────────────────
 with app.panel("main") as p:
-    p.text("CARNIVAL Terminal Library", font_size="22px")
-    p.story_text(lines=[
-        {"text": "A Gradio-like library for building retro terminal UIs."},
-        {"text": "Explore each component via the panels below."},
-    ]).set_attr("style", "margin-bottom: 4px")
+    p.text("CTUI", font_size="22px")
+    p.text("A Gradio-like terminal UI library.", font_size="12px")
     p.row()
-    p.scroll_panel(height="48px").add(
-        Button("📋 Components", target="panel-components"),
-        Button("⚙ Settings", target="panel-settings"),
-        Button("⌨ Typewriter", target="panel-typewriter"),
-        Button("⏱ Countdown", target="panel-countdown"),
-        Button("📁 ScrollView", target="panel-scroll"),
-        Button("📊 Table", target="panel-table"),
-        Button("🗂 Dialog", target="panel-dialog"),
-        Button("🧩 More", target="panel-more"),
-        Button("📦 Misc", target="panel-misc"),
-        Button("📖 Story", target="panel-story"),
-    )
+    p.button("📋 Components", target="panel-components")
+    p.button("⚙ Settings", target="panel-settings")
+    p.button("⌨ Typewriter", target="panel-typewriter")
+    p.button("⏱ Countdown", target="panel-countdown")
+    p.button("📁 ScrollView", target="panel-scroll")
+    p.button("📊 Table", target="panel-table")
+    p.button("🗂 Dialog", target="panel-dialog")
+    p.button("🧩 More", target="panel-more")
+    p.button("📦 Misc", target="panel-misc")
+    p.button("📖 Story", target="panel-story")
     p.row()
     p.long_press("⏻ Long-press to shutdown", duration=2000,
                  action="callback").on_activate(
