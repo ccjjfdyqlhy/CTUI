@@ -641,3 +641,25 @@ class StoryText(Component):
         self.callback_id = _new_callback_id()
         self.attrs["data-callback-id"] = self.callback_id
         return self
+
+
+class ScrollPanel(Component):
+    is_selectable = False
+    is_text = True
+
+    def __init__(self, components=None, height="120px"):
+        super().__init__()
+        self.tag = "div"
+        self.type = "scroll-panel"
+        self.style["height"] = height
+        self._children = components or []
+        rendered = ""
+        for c in self._children:
+            rendered += f'<div class="component-row">{c.render()}</div>'
+        self.content = rendered
+
+    def add(self, *components):
+        for c in components:
+            self._children.append(c)
+            self.content += f'<div class="component-row">{c.render()}</div>'
+        return self

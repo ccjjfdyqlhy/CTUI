@@ -155,6 +155,11 @@ input.terminal-component:focus{background:rgba(255,255,255,.5)}
 .preloader-track{width:60%;height:3px;background:rgba(255,255,255,.15);margin:0 auto;overflow:hidden;position:relative}
 .preloader-fill{position:absolute;top:0;left:0;height:100%;background:#fff;width:0%;transition:width .4s ease}
 
+.terminal-component[data-type="scroll-panel"]{overflow-y:auto;pointer-events:all;border:1px solid rgba(255,255,255,.1);padding:4px}
+.terminal-component[data-type="scroll-panel"]::-webkit-scrollbar{width:4px}
+.terminal-component[data-type="scroll-panel"]::-webkit-scrollbar-track{background:rgba(255,255,255,.05)}
+.terminal-component[data-type="scroll-panel"]::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2);border-radius:2px}
+
 .terminal-component[data-type="story-text"]{width:100%;pointer-events:all;position:relative}
 .story-scroll{width:100%;max-height:300px;overflow-y:auto;padding:8px;-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 24px,#000 90%,transparent 100%);pointer-events:all}
 .story-scroll::-webkit-scrollbar{width:4px}
@@ -511,6 +516,13 @@ class CARNIVALTerminal {
             this.cursor.style.left = comp.offsetLeft + 'px';
             this.cursor.style.width = comp.offsetWidth + 'px';
             this.cursor.style.height = comp.offsetHeight + 'px';
+            const sp = comp.closest('[data-type="scroll-panel"]');
+            if (sp) {
+                const cr = comp.getBoundingClientRect();
+                const sr = sp.getBoundingClientRect();
+                if (cr.bottom > sr.bottom) sp.scrollTop += cr.bottom - sr.bottom + 4;
+                else if (cr.top < sr.top) sp.scrollTop -= sr.top - cr.top + 4;
+            }
             if (this.mouseCursor && this.mouseCursor.style.display !== 'none') {
                 const r = comp.getBoundingClientRect();
                 this.mouseCursor.style.top = r.top + 'px';

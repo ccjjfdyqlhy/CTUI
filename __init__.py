@@ -31,6 +31,7 @@ from .components import (
     AudioToggle,
     Preloader,
     StoryText,
+    ScrollPanel,
     TypewriterPanel,
     CountdownConfig,
 )
@@ -68,6 +69,7 @@ __all__ = [
     "AudioToggle",
     "Preloader",
     "StoryText",
+    "ScrollPanel",
     "TypewriterPanel",
     "CountdownConfig",
 ]
