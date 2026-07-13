@@ -1156,6 +1156,9 @@ class CARNIVALTerminal {
             const el = document.querySelector(result.selector || '#' + result.target);
             if (el) el.dataset.visible = el.dataset.visible === 'true' ? 'false' : 'true';
         }
+        if (this.grid.length > 0 && this.cursor) {
+            requestAnimationFrame(() => this.updateHighlight());
+        }
     }
 
     toggleSwitch(comp) {
