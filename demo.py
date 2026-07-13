@@ -18,6 +18,7 @@ with app.panel("main") as p:
     p.button("🧩 More", target="panel-more")
     p.button("📦 Misc", target="panel-misc")
     p.button("📖 Story", target="panel-story")
+    p.button("🆕 New", target="panel-new")
     p.row()
     p.long_press("⏻ Long-press to shutdown", duration=2000,
                  action="callback").on_activate(
@@ -298,6 +299,52 @@ with app.panel("panel-misc") as p:
     ]).on_complete(lambda v: {"action": "set-text", "target": "preload-status", "value": "Boot complete."})
     p.text("Preloader status: ", font_size="12px")
     p.text("—", font_size="12px").set_attr("id", "preload-status")
+    p.row()
+    p.button("← Back", target="main")
+
+# ── MemoryMatch, CommandConsole, GlitchText, WebGLShader ─────
+with app.panel("panel-new") as p:
+    p.text("▸ New Components")
+    p.row()
+    p.text("Memory Match:", font_size="12px")
+    p.memory_match(rows=4, cols=4, pairs=["晨曦","薄暮","回声","倒影","琥珀","琉璃","湮灭","新生"], timer=60).on_complete(
+        lambda v: {"action": "set-text", "target": "mm-status", "value": "All pairs matched!"}
+    )
+    p.text("—", font_size="12px").set_attr("id", "mm-status")
+    p.row()
+    p.text("Command Console:", font_size="12px")
+    p.command_console(
+        prompts={
+            "boot": ["SYSTEM v4.2.1", "Type 'help' for commands."],
+            "hints": "Hint: try 'scan' then 'unlock'.",
+        },
+        parser={
+            "status": "All systems nominal.",
+            "scan": "Scanning memory fragments...\nFragment 7C4: OK\nFragment 4A: CORRUPT",
+            "unlock": {"lines": ["Access granted.", "Memory core decrypted."], "success": True},
+        },
+    ).on_command(lambda v: print("Console command executed"))
+    p.row()
+    p.text("Glitch Text:", font_size="12px")
+    p.glitch_text("CLASSIFIED — TOP SECRET — EYES ONLY", intensity=4)
+    p.row()
+    p.text("WebGL Shader (click to toggle):", font_size="12px")
+    p.webgl_shader(fragment_src="""
+precision highp float;
+uniform float u_time;
+uniform vec2 u_resolution;
+void main(){
+    vec2 p = (gl_FragCoord.xy * 2.0 - u_resolution) / min(u_resolution.x, u_resolution.y);
+    float d = length(p);
+    float glow = 0.02 / d;
+    float pulse = sin(u_time * 0.5 + d * 3.0) * 0.5 + 0.5;
+    vec3 c = vec3(0.3, 0.6, 1.0) * glow * pulse;
+    gl_FragColor = vec4(c, 0.3);
+}
+""").set_attr("id", "shader-demo")
+    p.button("Toggle Shader", action="callback").on_activate(
+        lambda v: {"action": "set-visible", "target": "shader-demo"}
+    )
     p.row()
     p.button("← Back", target="main")
 

@@ -121,7 +121,7 @@ class LongPress(Component):
         super().__init__()
         self.tag = "button"
         self.type = "long-press"
-        self.content = label
+        self.content = label + '<span class="charge-bar"></span>'
         self.attrs["data-duration"] = str(duration)
         if action:
             self.attrs["data-action"] = action
@@ -663,3 +663,86 @@ class ScrollPanel(Component):
             self._children.append(c)
             self.content += f'<div class="component-row">{c.render()}</div>'
         return self
+
+
+class MemoryMatch(Component):
+    is_selectable = False
+
+    def __init__(self, rows=4, cols=6, pairs=None, timer=180):
+        super().__init__()
+        self.tag = "div"
+        self.type = "memory-match"
+        self.attrs["data-rows"] = str(rows)
+        self.attrs["data-cols"] = str(cols)
+        self.attrs["data-timer"] = str(timer)
+        import json as _j
+        self.attrs["data-pairs"] = _j.dumps(pairs or [
+            "晨曦", "薄暮", "回声", "倒影",
+            "琥珀", "琉璃", "湮灭", "新生",
+            "迷雾", "尘埃", "潮汐", "星轨",
+        ])
+        self.content = (
+            '<div class="mm-timer"><span class="mm-timer-val">--:--</span></div>'
+            '<div class="mm-grid"></div>'
+        )
+
+    def on_complete(self, fn):
+        self._python_callback = fn
+        self.callback_id = _new_callback_id()
+        self.attrs["data-callback-id"] = self.callback_id
+        return self
+
+
+class CommandConsole(Component):
+    is_selectable = False
+
+    def __init__(self, prompts=None, parser=None):
+        super().__init__()
+        self.tag = "div"
+        self.type = "command-console"
+        import json as _j
+        self.attrs["data-prompts"] = _j.dumps(prompts or {"help": "Available commands: help, status, scan, unlock"})
+        self.attrs["data-parser"] = _j.dumps(parser or {})
+        self.content = (
+            '<div class="cc-log"></div>'
+            '<div class="cc-input-line"><span class="cc-prompt">></span><input class="cc-input" type="text"></div>'
+        )
+
+    def on_command(self, fn):
+        self._python_callback = fn
+        self.callback_id = _new_callback_id()
+        self.attrs["data-callback-id"] = self.callback_id
+        return self
+
+
+class GlitchText(Component):
+    is_selectable = False
+    is_text = True
+
+    def __init__(self, text="", intensity=3):
+        super().__init__()
+        self.tag = "span"
+        self.type = "glitch-text"
+        self.attrs["data-intensity"] = str(intensity)
+        self.content = text
+
+
+class WebGLShader(Component):
+    is_selectable = False
+    is_text = True
+
+    def __init__(self, vertex_src=None, fragment_src=None):
+        super().__init__()
+        self.tag = "div"
+        self.type = "webgl-shader"
+        self.attrs["data-visible"] = "false"
+        self.style["position"] = "fixed"
+        self.style["top"] = "0"
+        self.style["left"] = "0"
+        self.style["width"] = "100vw"
+        self.style["height"] = "100vh"
+        self.style["z-index"] = "998"
+        import json as _j
+        self.attrs["data-fragment"] = _j.dumps(fragment_src or "")
+        self.attrs["data-vertex"] = _j.dumps(vertex_src or "")
+        self.content = '<canvas class="shader-canvas"></canvas>'

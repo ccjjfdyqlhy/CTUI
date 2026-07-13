@@ -5,6 +5,7 @@ from .components import (
     StatusDot, CodeBlock, LogViewer, Keypad, Separator,
     Checkbox, Dropdown, Modal, LogGenerator, ChoiceGroup,
     AudioToggle, Preloader, StoryText, ScrollPanel,
+    MemoryMatch, CommandConsole, GlitchText, WebGLShader,
 )
 
 
@@ -131,6 +132,18 @@ class Panel:
 
     def scroll_panel(self, components=None, height="120px"):
         return self._add(ScrollPanel(components, height))
+
+    def memory_match(self, rows=4, cols=6, pairs=None, timer=180):
+        return self._add(MemoryMatch(rows, cols, pairs, timer))
+
+    def command_console(self, prompts=None, parser=None):
+        return self._add(CommandConsole(prompts, parser))
+
+    def glitch_text(self, text="", intensity=3):
+        return self._add(GlitchText(text, intensity))
+
+    def webgl_shader(self, vertex_src=None, fragment_src=None):
+        return self._add(WebGLShader(vertex_src, fragment_src))
 
     def set_typewriter(self, secret_words=None, prompt="Press any letter key..."):
         self.typewriter_config = TypewriterPanel(secret_words, prompt)

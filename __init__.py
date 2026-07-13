@@ -32,6 +32,10 @@ from .components import (
     Preloader,
     StoryText,
     ScrollPanel,
+    MemoryMatch,
+    CommandConsole,
+    GlitchText,
+    WebGLShader,
     TypewriterPanel,
     CountdownConfig,
 )
@@ -70,6 +74,10 @@ __all__ = [
     "Preloader",
     "StoryText",
     "ScrollPanel",
+    "MemoryMatch",
+    "CommandConsole",
+    "GlitchText",
+    "WebGLShader",
     "TypewriterPanel",
     "CountdownConfig",
 ]
