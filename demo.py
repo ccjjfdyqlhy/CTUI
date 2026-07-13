@@ -16,6 +16,8 @@ with app.panel("main") as p:
     p.button("📊 Table", target="panel-table")
     p.button("🗂 Dialog", target="panel-dialog")
     p.button("🧩 More", target="panel-more")
+    p.button("📦 Misc", target="panel-misc")
+    p.button("📖 Story", target="panel-story")
     p.row()
     p.long_press("⏻ Long-press to shutdown", duration=2000,
                  action="callback").on_activate(
@@ -257,6 +259,62 @@ with app.panel("panel-more") as p:
     p.button("Open Modal", action="modal-open").set_attr("data-target", "demo-modal")
     p.modal("demo-modal", "System Alert",
             "Memory fragmentation detected.<br>Recommended action: defragment.")
+    p.row()
+    p.button("← Back", target="main")
+
+# ── LogGenerator, ChoiceGroup, AudioToggle, Preloader ────────
+with app.panel("panel-misc") as p:
+    p.text("▸ Log, Choices, Audio, Preloader")
+    p.row()
+    p.log_generator(
+        lines=[
+            "[BOOT]  CARNIVAL kernel v4.2.1",
+            "[BOOT]  Memory check: 8192MB OK",
+            "[BOOT]  Neural interface: LINKED",
+            "[INFO]  Subject_07 consciousness detected",
+            "[WARN]  Fragment 4A: temporal anomaly",
+            "[INFO]  Synchronizing timeline...",
+            "[ OK ]  System nominal.",
+        ],
+        speed=80,
+    )
+    p.row()
+    p.text("Choices:", font_size="12px")
+    p.choice_group(["Investigate", "Ignore", "Run"]).on_choose(
+        lambda v: {"action": "set-text", "target": "choice-status", "value": f"Chose: {v}"}
+    )
+    p.text("Choice status: ", font_size="12px")
+    p.text("—", font_size="12px").set_attr("id", "choice-status")
+    p.row()
+    p.audio_toggle()
+    p.text("Audio Toggle (click to mute/unmute)", font_size="12px")
+    p.row()
+    p.preloader(stages=[
+        {"pct": 15, "label": "CHECKING INTEGRITY...", "delay": 600},
+        {"pct": 35, "label": "LOADING MEMORY BANKS...", "delay": 800},
+        {"pct": 65, "label": "DECRYPTING CORE DATA...", "delay": 1000},
+        {"pct": 85, "label": "STABILIZING LINK...", "delay": 700},
+        {"pct": 100, "label": "READY.", "delay": 500},
+    ]).on_complete(lambda v: {"action": "set-text", "target": "preload-status", "value": "Boot complete."})
+    p.text("Preloader status: ", font_size="12px")
+    p.text("—", font_size="12px").set_attr("id", "preload-status")
+    p.row()
+    p.button("← Back", target="main")
+
+# ── StoryText (novel player typewriter) ──────────────────────
+with app.panel("panel-story") as p:
+    p.text("▸ Story Text (Typewriter)")
+    p.row()
+    p.story_text(lines=[
+        {"speaker": "??", "text": "Can you hear me?"},
+        {"text": "A faint voice echoes through the void."},
+        {"speaker": "??", "text": "You've been asleep for a long time."},
+        {"text": "Memories flicker at the edge of your mind."},
+        {"speaker": "??", "text": "Do you remember what happened?"},
+        {"text": "The new year party. The machine. The light."},
+        {"speaker": "SYSTEM", "text": "Consciousness link established. Fragment recovery in progress."},
+        {"text": "Click to advance each line. Click during typing to skip."},
+    ]).on_line(lambda v: print(f"Story line completed: {v}"))
     p.row()
     p.button("← Back", target="main")
 

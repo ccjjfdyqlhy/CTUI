@@ -134,6 +134,41 @@ input.terminal-component:focus{background:rgba(255,255,255,.5)}
 *{cursor:none!important}
 :hover{cursor:none!important}
 .terminal-component.hover{background:rgba(255,255,255,.3)}
+
+.terminal-component[data-type="log-gen"]{width:100%;max-height:300px;overflow-y:hidden;background:rgba(255,255,255,.03);padding:8px;font-size:calc(var(--terminal-font-size)*.8);line-height:1.3;font-family:'Courier New',monospace;pointer-events:none;position:relative}
+.log-gen-line{white-space:pre-wrap;word-break:break-all;opacity:.85}
+
+.terminal-component[data-type="choice-group"]{display:flex;flex-direction:column;gap:8px;padding:8px;width:100%;pointer-events:all}
+.choice-btn{padding:8px 16px;text-align:left;background:transparent;border:1px solid rgba(255,255,255,.25);color:#fff;font-family:var(--terminal-font-family);font-size:calc(var(--terminal-font-size)*.95);cursor:pointer;pointer-events:all;transition:all .2s ease;opacity:0;animation:choice-in .3s ease forwards}
+.choice-btn:nth-child(1){animation-delay:0s}
+.choice-btn:nth-child(2){animation-delay:.1s}
+.choice-btn:nth-child(3){animation-delay:.2s}
+.choice-btn:nth-child(4){animation-delay:.3s}
+.choice-btn:nth-child(5){animation-delay:.4s}
+.choice-btn:hover{background:rgba(255,255,255,.9);color:#000;transform:translateX(8px)}
+.choice-btn:active{background:#fff;color:#000}
+@keyframes choice-in{0%{opacity:0;transform:translateY(10px)}100%{opacity:1;transform:translateY(0)}}
+
+.terminal-component[data-type="audio-toggle"]{pointer-events:all;font-size:calc(var(--terminal-font-size)*1.1)}
+
+.terminal-component[data-type="preloader"]{width:100%;padding:20px;text-align:center;pointer-events:none}
+.preloader-label{font-size:calc(var(--terminal-font-size)*.9);opacity:.7;margin-bottom:12px}
+.preloader-track{width:60%;height:3px;background:rgba(255,255,255,.15);margin:0 auto;overflow:hidden;position:relative}
+.preloader-fill{position:absolute;top:0;left:0;height:100%;background:#fff;width:0%;transition:width .4s ease}
+
+.terminal-component[data-type="story-text"]{width:100%;pointer-events:all;position:relative}
+.story-scroll{width:100%;max-height:300px;overflow-y:auto;padding:8px;-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 24px,#000 90%,transparent 100%);pointer-events:all}
+.story-scroll::-webkit-scrollbar{width:4px}
+.story-scroll::-webkit-scrollbar-track{background:rgba(255,255,255,.05)}
+.story-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2);border-radius:2px}
+.story-line{margin-bottom:12px;opacity:0;animation:story-line-in .3s ease forwards;pointer-events:none}
+.story-line .speaker{display:block;font-size:calc(var(--terminal-font-size)*.7);opacity:.5;letter-spacing:2px;margin-bottom:2px}
+.story-line .text{font-size:calc(var(--terminal-font-size)*.9);line-height:1.5;opacity:.9;white-space:pre-wrap}
+.story-line .text .char{opacity:0;animation:char-in .05s ease forwards}
+@keyframes char-in{0%{opacity:0}100%{opacity:1}}
+@keyframes story-line-in{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:translateY(0)}}
+.story-continue{text-align:center;font-size:calc(var(--terminal-font-size)*.7);opacity:0;letter-spacing:3px;padding:8px;transition:opacity .4s ease;pointer-events:none}
+.story-continue.show{opacity:.6}
 """
 
 
@@ -224,8 +259,11 @@ class CARNIVALTerminal {
         } else {
             this.cursor.classList.add('keyboard-cursor');
         }
+        this.cursor.style.transition = 'none';
         this.cursor.style.width = '0';
         this.cursor.style.height = '0';
+        void this.cursor.offsetHeight;
+        this.cursor.style.transition = '';
         this.applyCustomTextStyles();
         this.initializeSwitchComponents();
         this.initializeDropdownComponents();
@@ -242,6 +280,9 @@ class CARNIVALTerminal {
         const behavior = this.activePanel.dataset.behavior;
         if (behavior === 'countdown') this.startCountdown();
         if (behavior === 'typewriter') this.resetTypewriter();
+        this.activePanel.querySelectorAll('[data-type="log-gen"]').forEach(el => this.initLogGenerator(el));
+        this.activePanel.querySelectorAll('[data-type="preloader"]').forEach(el => this.initPreloader(el));
+        this.activePanel.querySelectorAll('[data-type="story-text"]').forEach(el => this.initStoryText(el));
     }
 
     buildGrid() {
@@ -253,7 +294,7 @@ class CARNIVALTerminal {
                 '.digit-string-component, [data-type="switch"], [data-type="toggle"], ' +
                 '[data-type="slider"], [data-type="checkbox"], [data-type="dropdown"], ' +
                 '[data-type="keypad"], [data-type="long-press"], [data-type="digit-string"], ' +
-                '[data-type="dragbar"]'
+                '[data-type="dragbar"], [data-type="choice-group"], [data-type="audio-toggle"]'
             ));
             if (components.length > 0) this.grid.push(components);
         });
@@ -324,7 +365,7 @@ class CARNIVALTerminal {
             '.digit-string-component, [data-type="switch"], [data-type="toggle"], ' +
             '[data-type="slider"], [data-type="checkbox"], [data-type="dropdown"], ' +
             '[data-type="keypad"], [data-type="long-press"], [data-type="digit-string"], ' +
-            '[data-type="dragbar"]'
+            '[data-type="dragbar"], [data-type="choice-group"], [data-type="audio-toggle"]'
         );
         if (!all || all.length === 0) {
             this.mouseCursor.style.display = 'none';
@@ -391,6 +432,8 @@ class CARNIVALTerminal {
             this.cancelLongPress();
         }
         else if (type === 'dragbar') { this.startDragbarEdit(e, comp); }
+        else if (type === 'choice-group') { /* choice buttons handle themselves */ }
+        else if (type === 'audio-toggle') { this.toggleAudio(comp); }
         else { this.activateComponent(comp); }
     }
 
@@ -403,6 +446,20 @@ class CARNIVALTerminal {
     handleClick(e) {
         const key = e.target.closest('.keypad-key');
         if (key) { this.handleKeypadKey(key); return; }
+        const choice = e.target.closest('.choice-btn');
+        if (choice) {
+            const group = choice.closest('[data-type="choice-group"]');
+            if (group && group.dataset.callbackId) {
+                const idx = choice.dataset.choiceIndex;
+                fetch(this.callbackBase + '/callback/' + group.dataset.callbackId, {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({value: idx})
+                }).then(r => r.json()).then(result => {
+                    if (result.action) this.handleCallbackResult(result);
+                }).catch(() => {});
+            }
+            return;
+        }
         const backdrop = e.target.closest('.dialog-backdrop, .modal-backdrop');
         if (backdrop) {
             const action = backdrop.dataset.action;
@@ -550,6 +607,8 @@ class CARNIVALTerminal {
         if (type === 'switch' || type === 'toggle') { this.toggleSwitch(comp); return; }
         if (type === 'checkbox') { this.toggleCheckbox(comp); return; }
         if (type === 'dropdown') { this.cycleDropdown(comp); return; }
+        if (type === 'choice-group') { return; }
+        if (type === 'audio-toggle') { this.toggleAudio(comp); return; }
         const action = comp.dataset.action;
         const target = comp.dataset.target;
         if (action === 'switch-panel' && target) { this.switchPanel(target); return; }
@@ -559,6 +618,147 @@ class CARNIVALTerminal {
         if (action === 'modal-open') { this.openModal(comp.dataset.target); return; }
         if (action === 'modal-close') { this.closeModal(comp.dataset.target); return; }
         if (action === 'change-font-size') { this.changeFontSize(comp.dataset.value); return; }
+    }
+
+    toggleAudio(comp) {
+        const muted = comp.dataset.muted === 'true';
+        comp.dataset.muted = muted ? 'false' : 'true';
+        comp.textContent = muted ? '[🔊]' : '[🔇]';
+        if (comp.dataset.callbackId) this.triggerCallback(comp);
+    }
+
+    initLogGenerator(comp) {
+        if (comp.dataset._logStarted) return;
+        comp.dataset._logStarted = 'true';
+        const lines = JSON.parse(comp.dataset.lines || '[]');
+        const speed = parseInt(comp.dataset.speed) || 50;
+        const maxLines = parseInt(comp.dataset.maxLines) || 50;
+        let idx = 0;
+        comp.innerHTML = '';
+        comp.style.maxHeight = '300px';
+        comp.style.overflowY = 'auto';
+        const append = () => {
+            if (idx >= lines.length) idx = 0;
+            const line = document.createElement('div');
+            line.className = 'log-gen-line';
+            line.textContent = lines[idx];
+            comp.appendChild(line);
+            comp.scrollTop = comp.scrollHeight;
+            while (comp.children.length > maxLines) comp.removeChild(comp.firstChild);
+            idx++;
+        };
+        append();
+        setInterval(append, speed);
+    }
+
+    initPreloader(comp) {
+        if (comp.dataset._preloadStarted) return;
+        comp.dataset._preloadStarted = 'true';
+        if (comp.dataset.autoStart !== 'true') return;
+        try {
+            const stages = JSON.parse(comp.dataset.stages);
+            const fill = comp.querySelector('.preloader-fill');
+            const label = comp.querySelector('.preloader-label');
+            let i = 0;
+            const advance = () => {
+                if (i >= stages.length) {
+                    if (comp.dataset.callbackId) this.triggerCallback(comp);
+                    return;
+                }
+                const s = stages[i];
+                if (fill) fill.style.width = s.pct + '%';
+                if (label) label.textContent = s.label;
+                i++;
+                if (s.pct < 100) setTimeout(advance, s.delay || 800);
+                else {
+                    if (comp.dataset.callbackId) setTimeout(() => this.triggerCallback(comp), 600);
+                }
+            };
+            advance();
+        } catch(e) {}
+    }
+
+    initStoryText(comp) {
+        if (comp.dataset._storyStarted) return;
+        comp.dataset._storyStarted = 'true';
+        let lines;
+        try { lines = JSON.parse(comp.dataset.lines); } catch(e) { return; }
+        if (!lines || lines.length === 0) return;
+        const scroll = comp.querySelector('.story-scroll');
+        const container = comp.querySelector('.story-lines');
+        const cont = comp.querySelector('.story-continue');
+        if (!scroll || !container) return;
+        let lineIdx = 0;
+        let isTyping = false;
+        let typeTimer = null;
+
+        const showLine = (lineData) => {
+            const div = document.createElement('div');
+            div.className = 'story-line';
+            if (lineData.speaker) {
+                const s = document.createElement('span');
+                s.className = 'speaker';
+                s.textContent = lineData.speaker;
+                div.appendChild(s);
+            }
+            const t = document.createElement('span');
+            t.className = 'text';
+            const text = lineData.text || '';
+            for (let ch of text) {
+                const c = document.createElement('span');
+                c.className = 'char';
+                c.textContent = ch;
+                t.appendChild(c);
+            }
+            div.appendChild(t);
+            container.appendChild(div);
+
+            let charIdx = 0;
+            const chars = t.querySelectorAll('.char');
+            isTyping = true;
+            cont.classList.remove('show');
+
+            const typeNext = () => {
+                if (charIdx < chars.length) {
+                    chars[charIdx].style.animation = '';
+                    chars[charIdx].style.opacity = '1';
+                    charIdx++;
+                    const delay = lineData.speaker ? 30 : 25;
+                    const extra = [',','.','!','?','，','。','！','？','…'].includes(text[charIdx-1]) ? 60 : 0;
+                    typeTimer = setTimeout(typeNext, delay + extra);
+                } else {
+                    isTyping = false;
+                    scroll.scrollTop = scroll.scrollHeight;
+                    cont.classList.add('show');
+                }
+            };
+            typeNext();
+        };
+
+        const nextLine = () => {
+            if (isTyping) return;
+            if (lineIdx >= lines.length) {
+                if (comp.dataset.callbackId) this.triggerCallback(comp);
+                return;
+            }
+            showLine(lines[lineIdx]);
+            lineIdx++;
+        };
+
+        scroll.addEventListener('click', () => {
+            if (isTyping) {
+                if (typeTimer) clearTimeout(typeTimer);
+                const chars = container.querySelectorAll('.story-line:last-child .char');
+                chars.forEach(c => { c.style.animation = ''; c.style.opacity = '1'; });
+                isTyping = false;
+                scroll.scrollTop = scroll.scrollHeight;
+                cont.classList.add('show');
+            } else {
+                nextLine();
+            }
+        });
+
+        nextLine();
     }
 
     async triggerCallback(comp) {

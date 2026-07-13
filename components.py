@@ -533,3 +533,111 @@ class DragBar(Component):
         self.callback_id = _new_callback_id()
         self.attrs["data-callback-id"] = self.callback_id
         return self
+
+
+class LogGenerator(Component):
+    is_selectable = False
+    is_text = True
+
+    def __init__(self, lines=None, max_lines=50, speed=50):
+        super().__init__()
+        self.tag = "div"
+        self.type = "log-gen"
+        self.attrs["data-max-lines"] = str(max_lines)
+        self.attrs["data-speed"] = str(speed)
+        import json as _j
+        self.attrs["data-lines"] = _j.dumps(lines or [
+            "INITIALIZING SYSTEM...",
+            "LOADING MEMORY FRAGMENTS...",
+            "SYNCHRONIZING NEURAL LINK...",
+            "READY.",
+        ])
+
+
+class ChoiceGroup(Component):
+    def __init__(self, choices=None):
+        super().__init__()
+        self.tag = "div"
+        self.type = "choice-group"
+        choices = choices or ["Continue"]
+        self.attrs["data-choices"] = ",".join(str(c) for c in choices)
+        btns = "".join(
+            f'<button class="choice-btn terminal-component" data-choice-index="{i}">{c}</button>'
+            for i, c in enumerate(choices)
+        )
+        self.content = btns
+
+    def on_choose(self, fn):
+        self._python_callback = fn
+        self.callback_id = _new_callback_id()
+        self.attrs["data-callback-id"] = self.callback_id
+        return self
+
+
+class AudioToggle(Component):
+    def __init__(self, initially_muted=False):
+        super().__init__()
+        self.tag = "button"
+        self.type = "audio-toggle"
+        self.attrs["data-muted"] = "true" if initially_muted else "false"
+        self.content = "[🔊]" if not initially_muted else "[🔇]"
+
+    def on_toggle(self, fn):
+        self._python_callback = fn
+        self.callback_id = _new_callback_id()
+        self.attrs["data-callback-id"] = self.callback_id
+        return self
+
+
+class Preloader(Component):
+    is_selectable = False
+    is_text = True
+
+    def __init__(self, stages=None, auto_start=True):
+        super().__init__()
+        self.tag = "div"
+        self.type = "preloader"
+        import json as _j
+        self.attrs["data-stages"] = _j.dumps(stages or [
+            {"pct": 25, "label": "INITIALIZING..."},
+            {"pct": 50, "label": "LOADING ASSETS..."},
+            {"pct": 75, "label": "SYNCHRONIZING..."},
+            {"pct": 100, "label": "READY."},
+        ])
+        self.attrs["data-auto-start"] = "true" if auto_start else "false"
+        self.content = (
+            '<div class="preloader-label">INITIALIZING...</div>'
+            '<div class="preloader-track"><div class="preloader-fill"></div></div>'
+        )
+
+    def on_complete(self, fn):
+        self._python_callback = fn
+        self.callback_id = _new_callback_id()
+        self.attrs["data-callback-id"] = self.callback_id
+        return self
+
+
+class StoryText(Component):
+    is_selectable = False
+    is_text = True
+
+    def __init__(self, lines=None, auto_advance=True):
+        super().__init__()
+        self.tag = "div"
+        self.type = "story-text"
+        import json as _j
+        self.attrs["data-lines"] = _j.dumps(lines or [
+            {"speaker": "??", "text": "Hello..."},
+            {"text": "A voice echoes in the dark."},
+        ])
+        self.attrs["data-auto"] = "true" if auto_advance else "false"
+        self.content = (
+            '<div class="story-scroll"><div class="story-lines"></div></div>'
+            '<div class="story-continue">CLICK TO CONTINUE</div>'
+        )
+
+    def on_line(self, fn):
+        self._python_callback = fn
+        self.callback_id = _new_callback_id()
+        self.attrs["data-callback-id"] = self.callback_id
+        return self

@@ -26,6 +26,11 @@ from .components import (
     Checkbox,
     Dropdown,
     Modal,
+    LogGenerator,
+    ChoiceGroup,
+    AudioToggle,
+    Preloader,
+    StoryText,
     TypewriterPanel,
     CountdownConfig,
 )
@@ -58,6 +63,11 @@ __all__ = [
     "Checkbox",
     "Dropdown",
     "Modal",
+    "LogGenerator",
+    "ChoiceGroup",
+    "AudioToggle",
+    "Preloader",
+    "StoryText",
     "TypewriterPanel",
     "CountdownConfig",
 ]

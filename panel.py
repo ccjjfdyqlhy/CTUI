@@ -3,7 +3,8 @@ from .components import (
     Input, Toggle, Slider, ProgressBar, DragBar, ScrollView, Image,
     TableView, Dialog, Spinner, TypewriterPanel, CountdownConfig, Html,
     StatusDot, CodeBlock, LogViewer, Keypad, Separator,
-    Checkbox, Dropdown, Modal,
+    Checkbox, Dropdown, Modal, LogGenerator, ChoiceGroup,
+    AudioToggle, Preloader, StoryText,
 )
 
 
@@ -112,6 +113,21 @@ class Panel:
 
     def dragbar(self, value=0, label=""):
         return self._add(DragBar(value, label))
+
+    def log_generator(self, lines=None, max_lines=50, speed=50):
+        return self._add(LogGenerator(lines, max_lines, speed))
+
+    def choice_group(self, choices=None):
+        return self._add(ChoiceGroup(choices))
+
+    def audio_toggle(self, initially_muted=False):
+        return self._add(AudioToggle(initially_muted))
+
+    def preloader(self, stages=None, auto_start=True):
+        return self._add(Preloader(stages, auto_start))
+
+    def story_text(self, lines=None, auto_advance=True):
+        return self._add(StoryText(lines, auto_advance))
 
     def set_typewriter(self, secret_words=None, prompt="Press any letter key..."):
         self.typewriter_config = TypewriterPanel(secret_words, prompt)
