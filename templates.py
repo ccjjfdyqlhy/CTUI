@@ -185,10 +185,7 @@ input.terminal-component:focus{background:rgba(255,255,255,.5)}
 .shader-canvas{width:100%;height:100%;display:block}
 
 .terminal-component[data-type="story-text"]{width:100%;pointer-events:all;position:relative}
-.story-scroll{width:100%;max-height:300px;overflow-y:auto;padding:8px;-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 24px,#000 90%,transparent 100%);pointer-events:all}
-.story-scroll::-webkit-scrollbar{width:4px}
-.story-scroll::-webkit-scrollbar-track{background:rgba(255,255,255,.05)}
-.story-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2);border-radius:2px}
+.story-scroll{width:100%;height:12em;overflow:hidden;padding:8px;-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 1.5em,#000 85%,transparent 100%);pointer-events:all;position:relative}
 .story-line{margin-bottom:12px;opacity:0;animation:story-line-in .3s ease forwards;pointer-events:none}
 .story-line .speaker{display:block;font-size:calc(var(--terminal-font-size)*.7);opacity:.5;letter-spacing:2px;margin-bottom:2px}
 .story-line .text{font-size:calc(var(--terminal-font-size)*.9);line-height:1.5;opacity:.9;white-space:pre-wrap}
@@ -599,14 +596,25 @@ class CARNIVALTerminal {
         if (activeEl?.tagName === 'INPUT' && !['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Enter','Escape'].includes(e.key)) return;
         if (activeEl?.tagName === 'INPUT' && ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) activeEl.blur();
 
+        const activeComp = this.grid[this.currentRowIndex]?.[this.currentColIndex];
         let moved = false, newRow = this.currentRowIndex, newCol = this.currentColIndex;
         switch (e.key) {
             case 'ArrowUp':
                 e.preventDefault();
+                if (activeComp?.dataset?.type === 'story-text' && activeComp.dataset._storyDone === 'false') {
+                    const sc = activeComp.querySelector('.story-scroll');
+                    if (sc) sc.scrollTop = Math.max(0, sc.scrollTop - 40);
+                    return;
+                }
                 if (newRow > 0) { newRow--; newCol = Math.min(this.currentColIndex, this.grid[newRow].length - 1); moved = true; }
                 break;
             case 'ArrowDown':
                 e.preventDefault();
+                if (activeComp?.dataset?.type === 'story-text' && activeComp.dataset._storyDone === 'false') {
+                    const sc = activeComp.querySelector('.story-scroll');
+                    if (sc) sc.scrollTop = Math.min(sc.scrollHeight, sc.scrollTop + 40);
+                    return;
+                }
                 if (newRow < this.grid.length - 1) { newRow++; newCol = Math.min(this.currentColIndex, this.grid[newRow].length - 1); moved = true; }
                 break;
             case 'ArrowLeft':
@@ -630,6 +638,11 @@ class CARNIVALTerminal {
             case 'Escape':
                 e.preventDefault();
                 if (activeEl?.tagName === 'INPUT') { activeEl.blur(); return; }
+                if (activeComp?.dataset?.type === 'story-text') {
+                    const sc = activeComp.querySelector('.story-scroll');
+                    if (sc) sc.click();
+                    return;
+                }
                 const visibleDialog = document.querySelector('.dialog-overlay[data-visible="true"]');
                 if (visibleDialog) { visibleDialog.dataset.visible = 'false'; }
                 const visibleModal = document.querySelector('.modal-overlay[data-visible="true"]');
@@ -769,6 +782,7 @@ class CARNIVALTerminal {
         let lineIdx = 0;
         let isTyping = false;
         let typeTimer = null;
+        comp.dataset._storyDone = 'false';
 
         const showLine = (lineData) => {
             const div = document.createElement('div');
@@ -816,7 +830,13 @@ class CARNIVALTerminal {
         const nextLine = () => {
             if (isTyping) return;
             if (lineIdx >= lines.length) {
+                comp.dataset._storyDone = 'true';
                 if (comp.dataset.callbackId) this.triggerCallback(comp);
+                if (this.grid.length > 0) {
+                    this.grid.forEach(r => r.forEach(c => c.classList.remove('active')));
+                }
+                if (this.cursor) this.cursor.classList.remove('activated');
+                cont.classList.remove('show');
                 return;
             }
             showLine(lines[lineIdx]);
@@ -1095,6 +1115,14 @@ class CARNIVALTerminal {
         if (result.action === 'set-text') {
             const el = document.querySelector(result.selector || '#' + result.target);
             if (el) el.textContent = result.value;
+            if (result.show) {
+                const btn = document.querySelector(result.show);
+                if (btn) btn.style.display = '';
+            }
+            if (result.status) {
+                const val = result.statusValue || result.value;
+                document.querySelectorAll('[id^="status-s"]').forEach(el => { el.textContent = val; });
+            }
         } else if (result.action === 'show-dialog') {
             this.openDialog(result.dialogId);
         } else if (result.action === 'hide-dialog') {
