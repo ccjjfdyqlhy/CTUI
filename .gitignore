@@ -1,4 +1,7 @@
 __pycache__/
 *.pyc
 *.pyo
-.prompts.txt.swp
+*.swp
+*.swo
+.DS_Store
+*.html
