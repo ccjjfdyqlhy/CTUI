@@ -125,7 +125,7 @@ input.terminal-component:focus{background:rgba(255,255,255,.5)}
 .modal-confirm:hover{background:rgba(255,255,255,.3)}
 
 #terminal-cursor{position:fixed;pointer-events:none;z-index:9999;background:rgba(255,255,255,.25);width:0;height:0;transition:width .12s ease,height .12s ease,top .12s ease,left .12s ease,background .15s,opacity .1s linear;display:none;opacity:1}
-#terminal-cursor.fading{opacity:0;transition:opacity 3s linear}
+#terminal-cursor.fading{opacity:0!important;transition:opacity .4s linear!important}
 #terminal-cursor.snapped{background:rgba(255,255,255,.35)}
 #terminal-cursor.clicked{background:#fff!important;transition:width .08s,height .08s,top .08s,left .08s,background 0s}
 .keyboard-cursor{opacity:1}
@@ -214,8 +214,8 @@ class CARNIVALTerminal {
         this.mouseIdleTimer = null;
         this.mouseFadeTimer = null;
         this.isMouseIdle = false;
-        this.mouseIdleDelay = 5000;
-        this.fadeDuration = 3000;
+        this.mouseIdleDelay = 3000;
+        this.fadeDuration = 400;
 
         this.init();
     }
@@ -251,7 +251,7 @@ class CARNIVALTerminal {
         this.stopDigitEdit();
         this.stopSliderEdit();
         this.stopKeypadEdit();
-        if (this.cursor) { this.cursor.classList.remove('activated'); this.cursor.style.transition = 'none'; this.cursor.style.opacity = '1'; }
+        if (this.cursor) { this.cursor.classList.remove('activated'); this.cursor.style.transition = 'none'; this.cursor.style.removeProperty('opacity'); }
         this.cursor = this.activePanel.querySelector('.cursor-highlight');
         if (!this.cursor) {
             this.cursor = document.createElement('div');
@@ -335,8 +335,8 @@ class CARNIVALTerminal {
         this.snappedComp = comp;
         this.mouseCursor.classList.add('snapped');
         this.mouseCursor.classList.remove('fading');
-        this.mouseCursor.style.opacity = '1';
-        if (this.cursor) { this.cursor.style.opacity = '0'; }
+        this.mouseCursor.style.removeProperty('opacity');
+        if (this.cursor) { this.cursor.style.transition = ''; this.cursor.style.opacity = '0'; }
         const r = comp.getBoundingClientRect();
         this.mouseCursor.style.top = r.top + 'px';
         this.mouseCursor.style.left = r.left + 'px';
@@ -357,9 +357,9 @@ class CARNIVALTerminal {
         if (this.isMouseIdle) {
             this.isMouseIdle = false;
             this.mouseCursor.classList.remove('fading');
-            this.mouseCursor.style.opacity = '1';
+            this.mouseCursor.style.removeProperty('opacity');
             this.mouseCursor.style.display = 'block';
-            if (this.cursor) { this.cursor.style.opacity = '1'; this.cursor.style.transition = ''; }
+            if (this.cursor) { this.cursor.style.transition = ''; this.cursor.style.opacity = '0'; }
         }
         const all = this.activePanel?.querySelectorAll(
             'button.terminal-component, input.terminal-component, ' +
@@ -393,16 +393,22 @@ class CARNIVALTerminal {
             this.mouseCursor.style.height = '24px';
             this.mouseCursor.style.top = (e.clientY - 12) + 'px';
             this.mouseCursor.style.left = (e.clientX - 10) + 'px';
-            if (this.cursor) { this.cursor.style.opacity = '0'; this.cursor.style.transition = ''; }
+            if (this.cursor) { this.cursor.style.transition = ''; this.cursor.style.opacity = '0'; }
             this.grid.forEach(r => r.forEach(c => c.classList.remove('active', 'hover')));
         }
         this.mouseIdleTimer = setTimeout(() => {
             this.isMouseIdle = true;
+            this.mouseCursor.style.removeProperty('opacity');
             this.mouseCursor.classList.add('fading');
             this.mouseFadeTimer = setTimeout(() => {
                 this.mouseCursor.style.display = 'none';
-                if (this.cursor) { this.cursor.style.transition = 'opacity 3s ease, top .15s cubic-bezier(.4,0,.2,1), left .15s cubic-bezier(.4,0,.2,1), height .15s cubic-bezier(.4,0,.2,1), width .15s cubic-bezier(.4,0,.2,1)'; this.cursor.style.opacity = '1'; }
-                this.updateHighlight();
+                if (this.cursor) {
+                    this.cursor.style.transition = 'opacity .4s ease, top .15s cubic-bezier(.4,0,.2,1), left .15s cubic-bezier(.4,0,.2,1), height .15s cubic-bezier(.4,0,.2,1), width .15s cubic-bezier(.4,0,.2,1)';
+                    this.cursor.style.opacity = '0';
+                    void this.cursor.offsetHeight;
+                    this.updateHighlight();
+                    this.cursor.style.opacity = '1';
+                }
             }, this.fadeDuration);
         }, this.mouseIdleDelay);
     }
@@ -412,7 +418,7 @@ class CARNIVALTerminal {
         if (!comp) return;
         this.isMouseDown = true;
         this.mouseCursor.classList.add('clicked');
-        if (this.cursor) { this.cursor.style.opacity = '0'; this.cursor.style.transition = ''; }
+        if (this.cursor) { this.cursor.style.transition = ''; this.cursor.style.opacity = '0'; }
         for (let ri = 0; ri < this.grid.length; ri++) {
             for (let ci = 0; ci < this.grid[ri].length; ci++) {
                 if (this.grid[ri][ci] === comp) {
@@ -505,14 +511,12 @@ class CARNIVALTerminal {
             this.cursor.style.left = comp.offsetLeft + 'px';
             this.cursor.style.width = comp.offsetWidth + 'px';
             this.cursor.style.height = comp.offsetHeight + 'px';
-            if (this.mouseCursor) {
+            if (this.mouseCursor && this.mouseCursor.style.display !== 'none') {
                 const r = comp.getBoundingClientRect();
                 this.mouseCursor.style.top = r.top + 'px';
                 this.mouseCursor.style.left = r.left + 'px';
                 this.mouseCursor.style.width = r.width + 'px';
                 this.mouseCursor.style.height = r.height + 'px';
-                this.mouseCursor.style.display = 'block';
-                this.mouseCursor.classList.add('snapped');
             }
         };
         requestAnimationFrame(pos);
